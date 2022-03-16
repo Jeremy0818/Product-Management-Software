@@ -25,3 +25,17 @@ Run the command:
 ```
 npm start
 ```
+
+# How to test the program
+```
+npm test
+```
+
+# Extra feature
+- allow upper and lower case command
+- output format in table
+- invalid command info
+
+# Future Improvement
+- generate unique id (SKU) automatically
+- enhance command and arguments handling with some help commands
