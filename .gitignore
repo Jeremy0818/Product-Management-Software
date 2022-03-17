@@ -1,3 +1,6 @@
+product.db
+.DS_Store
+
 # Logs
 logs
 *.log

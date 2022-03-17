@@ -16,7 +16,7 @@ function printErrorMessage(errMsg, formats) {
     console.log();
 }
 
-function handleCommand(line) {
+function handleCommand(line, db) {
     // removes whitespace from both ends of a string 
     // allow lower case command
     args = line.trim().toLowerCase().split(" ");
