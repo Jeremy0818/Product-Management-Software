@@ -5,6 +5,7 @@ jest.setTimeout(5000);
 
 var db;
 const empty = () => {};
+const fail = (err) => { console.error(err.message) };
 
 var setup = () => {
     return new Promise((resolve, reject) => {
@@ -446,6 +447,14 @@ test("Remove valid product and valid warehouse in stock test", done => {
         next, 
         empty);
 });
+
+test("Get valid warehouse limit test", done => {
+    const next = (result) => {
+        expect(result).toEqual(null);
+        done();
+    }
+    dbHelper.getWarehouseLimit(db, 970, next, fail);
+})
 
 afterAll(() => {
     // close the databse before ending the program

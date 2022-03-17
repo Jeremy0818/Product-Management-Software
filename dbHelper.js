@@ -144,8 +144,19 @@ function getSumProductInWarehouse(db, warehouse_num, success, failure) {
         if (err) {
             return failure(err);
         }
-        console.log(row);
         success(row.total);
+    });
+}
+
+function getWarehouseLimit(db, warehouse_num, success, failure) {
+    sql = `SELECT limit_qty
+            FROM warehouse
+            WHERE warehouse_num=?`;
+    db.get(sql, [warehouse_num], function(err, row) {
+        if (err) {
+            return failure(err);
+        }
+        success(row.limit_qty);
     });
 }
 
@@ -159,4 +170,5 @@ module.exports = {setuptable,
                   updateProductInWarehouse,
                   removeProductInWarehouse,
                   getProducdtInWarehouse,
-                  getSumProductInWarehouse};
+                  getSumProductInWarehouse,
+                  getWarehouseLimit};

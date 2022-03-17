@@ -6,17 +6,18 @@ const stockFormat = `    STOCK SKU WAREHOUSE# QTY`;
 const unstockFormat = `    UNSTOCK SKU WAREHOUSE# QTY`;
 const listProductsFormat = `    LIST PRODUCTS`;
 const listWarehousesFormat = `    LIST WAREHOUSES`;
-const listWarehouseFormat = `    LIST WAREHOUSE`;
+const listWarehouseFormat = `    LIST WAREHOUSE WAREHOUSE#*`;
 
-function printErrorMessage(errMsg, formats) {
+function printErrorMessage(errMsg, formats, readline) {
     console.log(errMsg + '\n');
     for (let i = 0 ; i < formats.length ; i++) {
         console.log(formats[i]);
     }
     console.log();
+    readline.prompt();
 }
 
-function handleCommand(line, db) {
+function handleCommand(line, db, readline) {
     // removes whitespace from both ends of a string 
     // allow lower case command
     args = line.trim().toLowerCase().split(" ");
@@ -26,69 +27,74 @@ function handleCommand(line, db) {
         case 'add':
             if (args.length < 2) {
                 printErrorMessage("Invalid command, similar commands are:",
-                [addProductFormat, addWarehouseFormat]);
+                [addProductFormat, addWarehouseFormat], readline);
                 break;
             }
             if (args[1].localeCompare("product") === 0) {
                 if (args.length < 4) {
                     printErrorMessage("Invalid argument, the command format is:",
-                    [addProductFormat]);
+                    [addProductFormat], readline);
                     break;
                 }
-                command.addProduct(args[2], args[3]);
+                command.addProduct(db, readline, args[2], args[3]);
             } else if (args[1].localeCompare("warehouse") === 0) {
                 if (args.length < 3) {
                     printErrorMessage("Invalid argument, the command format is:",
-                    [addWarehouseFormat]);
+                    [addWarehouseFormat], readline);
                     break;
                 }
-                command.addWarehouse(args[2], args.length > 3 ? args[3] : null);
+                command.addWarehouse(db, readline, args[2], args.length > 3 ? args[3] : null);
             } else {
                 // console.log(invalidCommandMessage);
                 printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
-                     listProductsFormat, listWarehouseFormat, listWarehousesFormat])
+                     listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline)
             }
             
             break;
         case 'stock':
             if (args.length < 4) {
                 printErrorMessage("Invalid argument, similar commands are:",
-                [stockFormat]);
+                [stockFormat], readline);
                 break;
             }
-            command.stock(args[1], args[2], args[3]);
+            command.stock(db, readline, args[1], args[2], args[3]);
             break;
         case 'unstock':
             if (args.length < 2) {
                 printErrorMessage("Invalid argument, similar commands are:",
-                [unstockFormat]);
+                [unstockFormat], readline);
                 break;
             }
-            command.unstock(args[1], args[2], args[3]);
+            command.unstock(db, readline, args[1], args[2], args[3]);
             break;
         case 'list':
             if (args.length < 2) {
                 printErrorMessage("Invalid command, similar commands are:",
-                [listProductsFormat, listWarehouseFormat, listWarehousesFormat]);
+                [listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline);
                 break;
             }
             if (args[1].localeCompare("products") === 0) {
-                command.listProducts();
+                command.listProducts(db, readline);
             } else if (args[1].localeCompare("warehouses") === 0) {
-                command.listWarehouses();
+                command.listWarehouses(db, readline);
             } else if (args[1].localeCompare("warehouse") === 0) {
-                command.listWareouse();
+                if (args.length < 3) {
+                    printErrorMessage("Invalid argument, the command format is:",
+                    [listWarehouseFormat], readline);
+                    break;
+                }
+                command.listWarehouse(db, readline, args[2]);
             } else {
                 printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
-                     listProductsFormat, listWarehouseFormat, listWarehousesFormat])
+                     listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline)
             }
             break;
         default:
             printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
-                     listProductsFormat, listWarehouseFormat, listWarehousesFormat])
+                     listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline)
         break;
     }
 }

@@ -38,6 +38,8 @@ npm test
 - store items from previous run in database (eg. product.db)
 
 # Future Improvement
-- generate unique id (SKU) automatically
-- enhance command and arguments handling with some help commands
-- user account to register and login for authentication and authorization
+- Generate unique id (SKU) automatically
+- Enhance command and arguments handling with some help commands
+- Implement user account to register and login for authentication and authorization
+- Update limit of warehouse
+- Improve database query failuer error message
