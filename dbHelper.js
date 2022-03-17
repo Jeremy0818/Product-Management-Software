@@ -1,6 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
-
-function setuptable(db) {
+function setuptable(db, success, failure) {
     db.serialize(() => {
         // Queries scheduled here will be serialized.
         productTableSql = `
@@ -15,107 +13,150 @@ function setuptable(db) {
         )`;
         stockTableSql = `
         CREATE TABLE IF NOT EXISTS stock(
-            warehouse_num INTEGER,
-            SKU VARCHAR(50),
+            warehouse_num INTEGER NOT NULL,
+            SKU VARCHAR(50) NOT NULL,
             qty INTEGER NOT NULL,
             PRIMARY KEY (warehouse_num, SKU),
             FOREIGN KEY (warehouse_num) references warehouse,
             FOREIGN KEY (SKU) references product
         )`;
-        db.run(productTableSql)
-        .run(warehouseTableSql)
-        .run(stockTableSql);
+        db.run(`PRAGMA foreign_keys = ON;`);
+        db.run(productTableSql, (err) => {
+            if (err) {
+                return failure(err);
+                
+            }
+            db.run(warehouseTableSql, (err) => {
+                if (err) {
+                    return failure(err);
+                    
+                }
+                db.run(stockTableSql, (err) => {
+                    if (err) {
+                        return failure(err);
+                        
+                    }
+                    console.log("Tables created sucessfully");
+                    success();
+                })
+            })
+        });
     });
 }
 
-function insertProduct(db, product_name, sku) {
+function insertProduct(db, product_name, sku, success, failure) {
     // insert one row into the product table
     sql = `INSERT INTO product(SKU, product_name) VALUES (?, ?)`;
     db.run(sql, [sku, product_name], function(err) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
+        success();
     });
 }
 
-function getAllProduct(db) {
+function getAllProduct(db, success, failure) {
     // get the product catalog
     sql = `SELECT * FROM product`;
-    db.run(sql, [], function(err, rows) {
+    db.all(sql, [], function(err, rows) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
-        rows.forEach((row) => {
-            console.log(row.name);
-        });
+        success(rows);
     });
 }
 
-function insertWarehouse(db, warehouse_num, limit) {
+function insertWarehouse(db, warehouse_num, limit, success, failure) {
     // insert one row into the warehouse table
     sql = `INSERT INTO warehouse(warehouse_num, limit_qty) VALUES (?, ?)`;
     db.run(sql, [warehouse_num, limit], function(err) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
+        success();
     });
 }
 
-function getAllWarehouse(db) {
+function getAllWarehouse(db, success, failure) {
     // get the warehouse catalog
     sql = `SELECT * FROM warehouse`;
     db.all(sql, [], function(err, rows) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
-        rows.forEach((row) => {
-            console.log(row.name);
-        });
+        success(rows);
     });
 }
 
-function insertProductInWarehouse(db, sku, warehouse_num, qty) {
+function insertProductInWarehouse(db, sku, warehouse_num, qty, success, failure) {
     // insert one row into the warehouse table
     sql = `INSERT INTO stock(warehouse_num, SKU, qty) VALUES (?, ?, ?)`;
     db.run(sql, [warehouse_num, sku, qty], function(err) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
+        success();
     });
 }
 
-function updateProductInWarehouse(db, sku, warehouse_num, qty) {
+function updateProductInWarehouse(db, sku, warehouse_num, qty, success, failure) {
     // update one row in the stock table based on warehouse_num and sku
-    sql = `UPDATE stock SET qty=? WHERE SKU=? AND warehouse_num=?`;
+    sql = `UPDATE stock SET qty=? WHERE warehouse_num=? AND SKU=?`;
     db.run(sql, [qty, warehouse_num, sku], function(err) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
+        success();
     });
 }
 
-function removeProductInWarehouse(db, sku, warehouse_num, qty) {
+function removeProductInWarehouse(db, sku, warehouse_num, success, failure) {
     // delete one row in teh stock table based on warehouse_num and sku
     sql = `DELETE FROM stock WHERE warehouse_num=? AND SKU=?`;
     db.run(sql, [ warehouse_num, sku], function(err) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
+        success();
     });
 }
 
-function getProducdtInWarehouse(db, sku, warehouse_num) {
+function getProducdtInWarehouse(db, warehouse_num, success, failure) {
     // get the warehouse's product list and quantity
-    sql = `SELECT * FROM stock WHERE warehouse_num=? AND SKU=?`;
-    db.all(sql, [], function(err, rows) {
+    sql = `SELECT product.product_name as ITEM_NAME, product.SKU as ITEM_SKU, stock.qty as QTY
+            FROM stock
+            JOIN product ON stock.SKU = product.SKU
+            WHERE stock.warehouse_num=?`;
+    db.all(sql, [warehouse_num], function(err, rows) {
         if (err) {
-            return console.log(err.message);
+            return failure(err);
         }
-        rows.forEach((row) => {
-            console.log(row.name);
-        });
+        success(rows);
+    });
+}
+
+function getSumProductInWarehouse(db, warehouse_num, success, failure) {
+    // get the total quantity of a warehouse's products
+    sql = `SELECT sum(qty) as total
+            FROM stock
+            WHERE warehouse_num=?`;
+    db.get(sql, [warehouse_num], function(err, row) {
+        if (err) {
+            return failure(err);
+        }
+        console.log(row);
+        success(row.total);
     });
 }
 
 
-module.exports = {setuptable};
+module.exports = {setuptable,
+                  getAllProduct,
+                  insertProduct,
+                  getAllWarehouse,
+                  insertWarehouse,
+                  insertProductInWarehouse,
+                  updateProductInWarehouse,
+                  removeProductInWarehouse,
+                  getProducdtInWarehouse,
+                  getSumProductInWarehouse};
