@@ -43,3 +43,5 @@ npm test
 - Implement user account to register and login for authentication and authorization
 - Update limit of warehouse
 - Improve database query failuer error message
+- Print the result with a better representation (currently using console.table)
+- handle unexpected error and keep the program running

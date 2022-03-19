@@ -4,7 +4,7 @@ function setuptable(db, success, failure) {
         productTableSql = `
         CREATE TABLE IF NOT EXISTS product(
             SKU VARCHAR(50) PRIMARY KEY,
-            product_name VARCHAR(50) NOT NULL
+            product_name VARCHAR(200) NOT NULL
         )`;
         warehouseTableSql = `
         CREATE TABLE IF NOT EXISTS warehouse(
@@ -57,7 +57,7 @@ function insertProduct(db, product_name, sku, success, failure) {
 
 function getAllProduct(db, success, failure) {
     // get the product catalog
-    sql = `SELECT * FROM product`;
+    sql = `SELECT product_name as ITEM_NAME, SKU as ITEM_SKU FROM product`;
     db.all(sql, [], function(err, rows) {
         if (err) {
             return failure(err);
@@ -79,7 +79,7 @@ function insertWarehouse(db, warehouse_num, limit, success, failure) {
 
 function getAllWarehouse(db, success, failure) {
     // get the warehouse catalog
-    sql = `SELECT * FROM warehouse`;
+    sql = `SELECT warehouse_num as WAREHOUSE FROM warehouse`;
     db.all(sql, [], function(err, rows) {
         if (err) {
             return failure(err);
@@ -121,7 +121,7 @@ function removeProductInWarehouse(db, sku, warehouse_num, success, failure) {
     });
 }
 
-function getProducdtInWarehouse(db, warehouse_num, success, failure) {
+function getProductsInWarehouse(db, warehouse_num, success, failure) {
     // get the warehouse's product list and quantity
     sql = `SELECT product.product_name as ITEM_NAME, product.SKU as ITEM_SKU, stock.qty as QTY
             FROM stock
@@ -135,6 +135,20 @@ function getProducdtInWarehouse(db, warehouse_num, success, failure) {
     });
 }
 
+function getProductInWarehouse(db, sku, warehouse_num, success, failure) {
+    // get the warehouse's product list and quantity
+    sql = `SELECT product.product_name as ITEM_NAME, product.SKU as ITEM_SKU, stock.qty as QTY
+            FROM stock
+            JOIN product ON stock.SKU = product.SKU
+            WHERE stock.warehouse_num=? AND stock.SKU=?`;
+    db.get(sql, [warehouse_num, sku], function(err, row) {
+        if (err) {
+            return failure(err);
+        }
+        success(row);
+    });
+}
+
 function getSumProductInWarehouse(db, warehouse_num, success, failure) {
     // get the total quantity of a warehouse's products
     sql = `SELECT sum(qty) as total
@@ -144,7 +158,8 @@ function getSumProductInWarehouse(db, warehouse_num, success, failure) {
         if (err) {
             return failure(err);
         }
-        success(row.total);
+        if (row) success(row.total);
+        else success(undefined);
     });
 }
 
@@ -156,7 +171,8 @@ function getWarehouseLimit(db, warehouse_num, success, failure) {
         if (err) {
             return failure(err);
         }
-        success(row.limit_qty);
+        if (row) success(row.limit_qty);
+        else success(undefined);
     });
 }
 
@@ -169,6 +185,7 @@ module.exports = {setuptable,
                   insertProductInWarehouse,
                   updateProductInWarehouse,
                   removeProductInWarehouse,
-                  getProducdtInWarehouse,
+                  getProductInWarehouse,
+                  getProductsInWarehouse,
                   getSumProductInWarehouse,
                   getWarehouseLimit};

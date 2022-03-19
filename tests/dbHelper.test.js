@@ -82,9 +82,9 @@ test("Insert invalid product test", done => {
 
 test("Select all warehouses test", done => {
     let expected = [
-        { warehouse_num: 2, limit_qty: null },
-        { warehouse_num: 45, limit_qty: null },
-        { warehouse_num: 970, limit_qty: null }
+        { WAREHOUSE: 2},
+        { WAREHOUSE: 45},
+        { WAREHOUSE: 970}
     ];
     const success = (result) => {
         expect(result.sort(warehouse_func)).toEqual(expected.sort(warehouse_func));
@@ -131,10 +131,10 @@ test("Insert invalid product test", done => {
 test("Select all products test", done => {
     let expected = [
         {
-          SKU: '38538505-0767-453f-89af-d11c809ebb3b',
-          product_name: 'Sofia Vegara 5 Piece Living Room Set'
+          ITEM_SKU: '38538505-0767-453f-89af-d11c809ebb3b',
+          ITEM_NAME: 'Sofia Vegara 5 Piece Living Room Set'
         },
-        { SKU: '5ce956fa-a71e-4bfb-b6ae-5eeaa5eb0a70', product_name: 'BED' }
+        { ITEM_SKU: '5ce956fa-a71e-4bfb-b6ae-5eeaa5eb0a70', ITEM_NAME: 'BED' }
     ];
     const success = (result) => {
         expect(result.sort(product_func)).toEqual(expected.sort(product_func));
@@ -336,7 +336,7 @@ test("Select valid warehouse in stock test", done => {
                 970,
                 1,
                 () => {
-                    dbHelper.getProducdtInWarehouse(db,
+                    dbHelper.getProductsInWarehouse(db,
                         970,
                         next,
                         fail);
@@ -351,18 +351,42 @@ test("Select invalid warehouse in stock test", done => {
         expect(result).toEqual([]);
         done();
     }
-    dbHelper.getProducdtInWarehouse(db,
+    dbHelper.getProductsInWarehouse(db,
         97,
         next,
         empty);
 });
 
-test("Get total quantity in a valid warehouse test", done => {
+test("Select valid product in valid warehouse in stock test", done => {
+
+});
+
+test("Select invalid product in valid warehouse in stock test", done => {
+    
+});
+
+test("Select valid product in invalid warehouse in stock test", done => {
+    
+});
+
+test("Select invalid product in invalid warehouse in stock test", done => {
+    
+});
+
+test("Get total quantity of existing product in a valid warehouse test", done => {
     const next = (result) => {
         expect(result).toBe(500+1);
         done();
     }
     dbHelper.getSumProductInWarehouse(db, 970, next, empty);
+})
+
+test("Get total quantity of a valid empty warehouse test", done => {
+    const next = (result) => {
+        expect(result).toBe(null);
+        done();
+    }
+    dbHelper.getSumProductInWarehouse(db, 0, next, empty);
 })
 
 test("Remove invalid product and invalid warehouse in stock test", done => {
@@ -454,6 +478,14 @@ test("Get valid warehouse limit test", done => {
         done();
     }
     dbHelper.getWarehouseLimit(db, 970, next, fail);
+})
+
+test("Get invalid warehouse limit test", done => {
+    const next = (result) => {
+        expect(result).toEqual(undefined);
+        done();
+    }
+    dbHelper.getWarehouseLimit(db, 0, next, fail);
 })
 
 afterAll(() => {

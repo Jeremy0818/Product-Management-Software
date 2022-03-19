@@ -1,5 +1,15 @@
 const dbHelper = require("./dbHelper");
 
+const printTable = (data) => {
+    console.table(data);
+}
+
+const unexpectedFailure = (err) => {
+    // unexpected error happened when executing sqlite query
+    console.error(err.message);
+    process.exit(0); // exit program
+}
+
 function addProduct(db, readline, productName, sku) {
     /*
     Command format:
@@ -18,9 +28,11 @@ function addProduct(db, readline, productName, sku) {
     const success = () => { readline.prompt(); };
     const failure = (err) => {
         if (err.errno === 19) {
-            console.log("ERROR ADDING PRODUCT PRODUCT with SKU " + sku);
+            console.log("ERROR ADDING PRODUCT with SKU " + sku);
             console.log("ALREADY EXISTS")
             readline.prompt();
+        } else {
+            unexpectedFailure(err);
         }
     }
     dbHelper.insertProduct(db, productName, sku, success, failure);
@@ -40,15 +52,34 @@ function addWarehouse(db, readline, warehouseNum, stockLimit) {
         WAREHOUSE# - INTEGER
         STOCK_LIMIT - Optional, INTEGER
     */
+    // Validate argument type
+    let warehouseNumInt = parseInt(warehouseNum);
+    let stockLimitInt = parseInt(stockLimit);
+    if (warehouseNumInt === null) {
+        console.log("ERROR ADDING WAREHOUSE with WAREHOUSE# " + warehouseNum);
+        console.log("WAREHOUSE# NOT INTEGER");
+        readline.prompt();
+        return;
+    }
+    if (stockLimit)  {
+        if (stockLimitInt === null) {
+            console.log("ERROR ADDING WAREHOUSE with STOCK_LIMIT " + stockLimit);
+            console.log("STOCK_LIMIT NOT INTEGER");
+            readline.prompt();
+            return;
+        }
+    }
     const success = () => { readline.prompt(); };
     const failure = (err) => {
         if (err.errno === 19) {
-            console.log("ERROR ADDING PRODUCT PRODUCT with SKU " + sku);
-            console.log("ALREADY EXISTS")
+            console.log("ERROR ADDING WAREHOUSE with WAREHOUSE# " + warehouseNumInt);
+            console.log("ALREADY EXISTS");
+            readline.prompt();
+        } else {
+            unexpectedFailure(err);
         }
-        readline.prompt();
     }
-   dbHelper.insertWarehouse(db, warehouseNum, stockLimit, success, failure);
+   dbHelper.insertWarehouse(db, warehouseNumInt, stockLimitInt, success, failure);
 }
 
 function stock(db, readline, sku, warehouseNum, qty) {
@@ -67,9 +98,64 @@ function stock(db, readline, sku, warehouseNum, qty) {
     If a store has a stock limit that will be exceeded by this shipment, ship enough product so that
     the Stock Limit is fulfilled.
     */
-    const success = () => { readline.prompt(); };
-    const failure = () => { readline.prompt(); }
-    dbHelper.insertProductInWarehouse(db, sku, warehouseNum, qty, success, failure);
+    // Validate argument type
+    let warehouseNumInt = parseInt(warehouseNum);
+    let qtyInt = parseInt(qty);
+    if (warehouseNumInt === null) {
+        console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNum);
+        console.log("WAREHOUSE# NOT INTEGER");
+        readline.prompt();
+        return;
+    }
+    if (qtyInt === null) {
+        console.log("ERROR STOCKING WAREHOUSE with QTY " + qty);
+        console.log("QTY NOT INTEGER");
+        readline.prompt();
+        return;
+    }
+    // check if warehouse exists and get its limit
+    const getSuccess = (limit) => {
+        if (limit !== undefined) { // warehouse exists
+    //      get the total stock quantity in the corresponding warehouse
+            const sumSuccess = (total) => {
+                if (!total) { // warehouse is empty
+                    total = 0;
+                }
+                let available = limit ? (limit > qtyInt + total ? qtyInt : limit) : qtyInt;
+                const checkSuccess = (result) => {
+                    if (!result) { //  sku does not exists in the warehouse's stock
+    //      Case 1: sku does not exists in stock
+    //          (i) insert product with quantity allowed if there is a limit
+    //          (ii) insert as many product as requested
+                        const insertSuccess = () => { readline.prompt(); };
+                        const insertFail = (err) => {
+                            if (err.errno === 19) {
+                                console.log("ERROR STOCKING WAREHOUSE with SKU " + sku);
+                                console.log("PRODUCT DOES NOT EXISTS");
+                                readline.prompt();
+                            } else {
+                                unexpectedFailure(err);
+                            }
+                        }
+                        dbHelper.insertProductInWarehouse(db, sku, warehouseNumInt, available, insertSuccess, insertFail);
+                    } else { // sku exists in the warehouse's stock
+    //      Case 2: sku exists in stock
+    //          (i) update product with quantity allowed if there is a limit
+    //          (ii) update as many product as requested 
+                        const updateSuccess = () => { readline.prompt(); };
+                        dbHelper.updateProductInWarehouse(db, sku, warehouseNumInt, result.QTY + available, updateSuccess, unexpectedFailure);
+                    }
+                }
+                dbHelper.getProductInWarehouse(db, sku, warehouseNumInt, checkSuccess, unexpectedFailure);
+            };
+            dbHelper.getSumProductInWarehouse(db, warehouseNumInt, sumSuccess, unexpectedFailure);
+        } else {
+            console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNumInt);
+            console.log("WAREHOUSE DOES NOT EXIST");
+            readline.prompt(); 
+        }
+    };
+    dbHelper.getWarehouseLimit(db, warehouseNumInt, getSuccess, unexpectedFailure);
 }
 
 function unstock(db, readline, sku, warehouseNum, qty) {
@@ -88,7 +174,50 @@ function unstock(db, readline, sku, warehouseNum, qty) {
     If a store has a stock that will go below 0 for this shipment only unstock enough products so
     stock stays at 0.
     */
-    readline.prompt();
+    // Validate argument type
+    let warehouseNumInt = parseInt(warehouseNum);
+    let qtyInt = parseInt(qty);
+    if (warehouseNumInt === null) {
+        console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNum);
+        console.log("WAREHOUSE# NOT INTEGER");
+        readline.prompt();
+        return;
+    }
+    if (qtyInt === null) {
+        console.log("ERROR STOCKING WAREHOUSE with QTY " + qty);
+        console.log("QTY NOT INTEGER");
+        readline.prompt();
+        return;
+    }
+    // check if warehouse exists
+    const getSuccess = (limit) => { 
+        if (limit !== undefined) { // warehouse exists
+    //      get the total stock quantity in the corresponding warehouse
+            const sumSuccess = (total) => {
+                if (!total) { // warehouse is empty
+                    readline.prompt();
+                    return; // nothing to unstock
+                }
+                const checkSuccess = (result) => {
+                    if (!result) { //  sku does not exists in the warehouse's stock
+                        console.log("ERROR UNSTOCKING WAREHOUSE with SKU " + sku);
+                        console.log("PRODUCT DOES NOT EXISTS");
+                        readline.prompt();
+                    } else { // sku exists in the warehouse's stock
+                        const updateSuccess = () => { readline.prompt(); };
+                        dbHelper.updateProductInWarehouse(db, sku, warehouseNumInt, Math.max(result.QTY - qtyInt, 0), updateSuccess, unexpectedFailure);
+                    }
+                }
+                dbHelper.getProductInWarehouse(db, sku, warehouseNumInt, checkSuccess, unexpectedFailure);
+            };
+            dbHelper.getSumProductInWarehouse(db, warehouseNumInt, sumSuccess, unexpectedFailure);
+        } else {
+            console.log("ERROR UNSTOCKING WAREHOUSE with WAREHOUSE# " + warehouseNumInt);
+            console.log("WAREHOUSE DOES NOT EXIST");
+            readline.prompt(); 
+        }
+    };
+    dbHelper.getWarehouseLimit(db, warehouseNumInt, getSuccess, unexpectedFailure);
 }
 
 function listProducts(db, readline) {
@@ -102,12 +231,10 @@ function listProducts(db, readline) {
         db - database object used in the program
     */
     const success = (result) => {
-        console.table(result);
+        printTable(result);
         readline.prompt();
     }
-    // the program should not call the failure callback function
-    const failure = (err) => { readline.prompt(); };
-    dbHelper.getAllProduct(db, success, failure);
+    dbHelper.getAllProduct(db, success, unexpectedFailure);
 }
 
 function listWarehouses(db, readline) {
@@ -121,12 +248,10 @@ function listWarehouses(db, readline) {
         db - database object used in the program
     */
     const success = (result) => {
-        console.table(result);
+        printTable(result);
         readline.prompt();
     }
-    // the program should not call the failure callback function
-    const failure = (err) => { readline.prompt(); };
-    dbHelper.getAllWarehouse(db, success, failure);
+    dbHelper.getAllWarehouse(db, success, unexpectedFailure);
 }
 
 function listWarehouse(db, readline, warehouseNum) {
@@ -141,12 +266,17 @@ function listWarehouse(db, readline, warehouseNum) {
         db - database object used in the program
     */
     const success = (result) => {
-        console.table(result);
+        printTable(result);
         readline.prompt();
+    };
+    let warehouseNumInt = parseInt(warehouseNum);
+    if (warehouseNumInt === null) {
+        console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNum);
+        console.log("WAREHOUSE# NOT INTEGER");
+        readline.prompt();
+        return;
     }
-    // the program should not call the failure callback function
-    const failure = (err) => { readline.prompt(); };
-    dbHelper.getProducdtInWarehouse(db, warehouseNum, success, failure);
+    dbHelper.getProductsInWarehouse(db, warehouseNumInt, success, unexpectedFailure);
 }
 
 module.exports = {addProduct, addWarehouse, stock, unstock, listProducts, listWarehouses, listWarehouse};

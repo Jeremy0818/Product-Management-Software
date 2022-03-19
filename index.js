@@ -9,7 +9,7 @@ function run() {
     });
 
     // open the database
-    let db = new sqlite3.Database('./product.db', sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+    let db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
         if (err) {
             console.error(err.message);
         }
