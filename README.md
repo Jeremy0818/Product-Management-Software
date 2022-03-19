@@ -31,6 +31,9 @@ npm start
 npm test
 ```
 
+# Documentation
+Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) for documentation
+
 # Extra feature
 - allow upper and lower case command
 - output format in table
