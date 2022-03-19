@@ -21,7 +21,10 @@ function run() {
             readline.prompt();
         }
         // the program should not call the failure callback function
-        const failure = (err) => {};
+        const failure = (err) => {
+            console.error(err.message);
+            process.exit(1);
+        };
         dbHelper.setuptable(db, success, failure);
     });
     

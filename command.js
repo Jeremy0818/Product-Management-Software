@@ -7,7 +7,7 @@ const printTable = (data) => {
 const unexpectedFailure = (err) => {
     // unexpected error happened when executing sqlite query
     console.error(err.message);
-    process.exit(0); // exit program
+    process.exit(1); // exit program
 }
 
 function addProduct(db, readline, productName, sku) {
@@ -29,7 +29,7 @@ function addProduct(db, readline, productName, sku) {
     const failure = (err) => {
         if (err.errno === 19) {
             console.log("ERROR ADDING PRODUCT with SKU " + sku);
-            console.log("ALREADY EXISTS")
+            console.log("ALREADY EXISTS");
             readline.prompt();
         } else {
             unexpectedFailure(err);

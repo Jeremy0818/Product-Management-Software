@@ -28,7 +28,9 @@ npm start
 
 # How to test the program
 ```
-npm test
+npm test                        // to run all tests
+npm test <tests/testfile>       // to test a single test suite
+npm test -- --coverage          // to generate coverage report
 ```
 
 # Extra feature
@@ -44,4 +46,5 @@ npm test
 - Update limit of warehouse
 - Improve database query failuer error message
 - Print the result with a better representation (currently using console.table)
-- handle unexpected error and keep the program running
+- Handle unexpected error and keep the program running
+- Add more helpful commands to manage the products

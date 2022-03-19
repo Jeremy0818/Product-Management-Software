@@ -27,7 +27,7 @@ function handleCommand(line, db, readline) {
     if (!args) {
         printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
-                     listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline);
+                     listProductsFormat, listWarehousesFormat, listWarehouseFormat], readline);
         return;
     }
     let i = args.length;
@@ -64,7 +64,7 @@ function handleCommand(line, db, readline) {
                 // console.log(invalidCommandMessage);
                 printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
-                     listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline);
+                     listProductsFormat, listWarehousesFormat, listWarehouseFormat], readline);
             }
             
             break;
@@ -104,13 +104,13 @@ function handleCommand(line, db, readline) {
             } else {
                 printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
-                     listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline);
+                     listProductsFormat, listWarehousesFormat, listWarehouseFormat], readline);
             }
             break;
         default:
             printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
-                     listProductsFormat, listWarehouseFormat, listWarehousesFormat], readline);
+                     listProductsFormat, listWarehousesFormat, listWarehouseFormat], readline);
         break;
     }
 }

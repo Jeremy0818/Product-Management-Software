@@ -358,19 +358,56 @@ test("Select invalid warehouse in stock test", done => {
 });
 
 test("Select valid product in valid warehouse in stock test", done => {
-
+    let expected = {
+        ITEM_NAME: 'Sofia Vegara 5 Piece Living Room Set',
+        ITEM_SKU: '38538505-0767-453f-89af-d11c809ebb3b',
+        QTY: 500
+    };
+    const next = (result) => {
+        expect(result).toEqual(expected);
+        done();
+    }
+    dbHelper.getProductInWarehouse(db,
+        '38538505-0767-453f-89af-d11c809ebb3b',
+        970,
+        next,
+        empty);
 });
 
 test("Select invalid product in valid warehouse in stock test", done => {
-    
+    const next = (result) => {
+        expect(result).toEqual(undefined);
+        done();
+    }
+    dbHelper.getProductInWarehouse(db,
+        '38538505',
+        970,
+        next,
+        empty);
 });
 
 test("Select valid product in invalid warehouse in stock test", done => {
-    
+    const next = (result) => {
+        expect(result).toEqual(undefined);
+        done();
+    }
+    dbHelper.getProductInWarehouse(db,
+        '38538505-0767-453f-89af-d11c809ebb3b',
+        90,
+        next,
+        empty);
 });
 
 test("Select invalid product in invalid warehouse in stock test", done => {
-    
+    const next = (result) => {
+        expect(result).toEqual(undefined);
+        done();
+    }
+    dbHelper.getProductInWarehouse(db,
+        '38538505',
+        97,
+        next,
+        empty);
 });
 
 test("Get total quantity of existing product in a valid warehouse test", done => {
@@ -489,7 +526,7 @@ test("Get invalid warehouse limit test", done => {
 })
 
 afterAll(() => {
-    // close the databse before ending the program
+    // close the databse before ending the tests
     db.close((err) => {
         if (err) {
             console.error(err.message);
