@@ -279,4 +279,11 @@ function listWarehouse(db, readline, warehouseNum) {
     dbHelper.getProductsInWarehouse(db, warehouseNumInt, success, unexpectedFailure);
 }
 
-module.exports = {addProduct, addWarehouse, stock, unstock, listProducts, listWarehouses, listWarehouse};
+module.exports = {
+    addProduct, 
+    addWarehouse, 
+    stock, 
+    unstock, 
+    listProducts, 
+    listWarehouses, 
+    listWarehouse};

@@ -1,4 +1,7 @@
 const command = require('./command');
+const FileHelper = require("./fileHelper");
+
+const fileHelper = new FileHelper("history.log");
 
 const addProductFormat = `    ADD PRODUCT "PRODUCT NAME" SKU`;
 const addWarehouseFormat = `    ADD WAREHOUSE WAREHOUSE# [STOCK_LIMIT]`;
@@ -32,6 +35,8 @@ function handleCommand(line, db, readline) {
         // remove quotation mark
         args[i] = args[i].replace(/"/g,"");
     }
+    // log command to history
+    fileHelper.addCommand(line);
     // check arguments
     // run command
     switch(args[0].toLowerCase()) { // allow lower case command
