@@ -43,7 +43,7 @@ Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) to 
 
 ## Extra feature
 - allow upper and lower case command
-- output format in table
+- print output in table format
 - invalid command/argument info
 - store items from previous run in database (eg. product.db)
 
