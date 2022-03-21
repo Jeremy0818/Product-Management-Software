@@ -39,7 +39,7 @@ npm test -- --coverage          // to generate coverage report
 ```
 
 ## Documentation
-Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) for documentation
+Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) to read the documentation.
 
 ## Extra feature
 - allow upper and lower case command
