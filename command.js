@@ -25,17 +25,21 @@ function addProduct(db, readline, productName, sku) {
         SKU - Unique Identifier.
     */
     // Nothing to output if the product is added successfully
-    const success = () => { readline.prompt(); };
-    const failure = (err) => {
-        if (err.errno === 19) {
-            console.log("ERROR ADDING PRODUCT with SKU " + sku);
-            console.log("ALREADY EXISTS");
+    return new Promise((resolve, reject) => {
+        dbHelper.insertProduct(db, productName, sku, resolve, resolve);
+    }).then((res) => {
+        if (res) { // failed
+            let err = res;
+            if (err.errno === 19) {
+                console.log("ERROR ADDING PRODUCT with SKU " + sku + "\nALREADY EXISTS");
+                readline.prompt();
+            } else {
+                unexpectedFailure(err);
+            }
+        } else { // success
             readline.prompt();
-        } else {
-            unexpectedFailure(err);
         }
-    }
-    dbHelper.insertProduct(db, productName, sku, success, failure);
+    });
 }
 
 function addWarehouse(db, readline, warehouseNum, stockLimit) {
@@ -55,31 +59,41 @@ function addWarehouse(db, readline, warehouseNum, stockLimit) {
     // Validate argument type
     let warehouseNumInt = parseInt(warehouseNum);
     let stockLimitInt = parseInt(stockLimit);
-    if (warehouseNumInt === null) {
-        console.log("ERROR ADDING WAREHOUSE with WAREHOUSE# " + warehouseNum);
-        console.log("WAREHOUSE# NOT INTEGER");
-        readline.prompt();
-        return;
+    if (isNaN(warehouseNumInt)) {
+        return new Promise((resolve, reject) => {
+            console.log("ERROR ADDING WAREHOUSE with WAREHOUSE# " 
+            + warehouseNum + "\nWAREHOUSE# NOT INTEGER");
+            readline.prompt();
+            resolve();
+        });
     }
+
     if (stockLimit)  {
-        if (stockLimitInt === null) {
-            console.log("ERROR ADDING WAREHOUSE with STOCK_LIMIT " + stockLimit);
-            console.log("STOCK_LIMIT NOT INTEGER");
-            readline.prompt();
-            return;
+        if (isNaN(stockLimitInt)) {
+            return new Promise((resolve, reject) => {
+                console.log("ERROR ADDING WAREHOUSE with STOCK_LIMIT " 
+                + stockLimit + "\nSTOCK_LIMIT NOT INTEGER");
+                readline.prompt();
+                resolve();
+            });
         }
     }
-    const success = () => { readline.prompt(); };
-    const failure = (err) => {
-        if (err.errno === 19) {
-            console.log("ERROR ADDING WAREHOUSE with WAREHOUSE# " + warehouseNumInt);
-            console.log("ALREADY EXISTS");
-            readline.prompt();
-        } else {
-            unexpectedFailure(err);
-        }
-    }
-   dbHelper.insertWarehouse(db, warehouseNumInt, stockLimitInt, success, failure);
+
+    return new Promise((resolve, reject) => {
+        dbHelper.insertWarehouse(db, warehouseNumInt, stockLimitInt, resolve, resolve);
+    }).then((res) => {
+        if (res) { // failed
+            let err = res;
+            if (err.errno === 19) {
+                console.log("ERROR ADDING WAREHOUSE with WAREHOUSE# " 
+                + warehouseNumInt + "\nALREADY EXISTS");
+            } else {
+                unexpectedFailure(err);
+            }
+        } 
+        // success
+        readline.prompt();
+    });
 }
 
 function stock(db, readline, sku, warehouseNum, qty) {
@@ -101,61 +115,97 @@ function stock(db, readline, sku, warehouseNum, qty) {
     // Validate argument type
     let warehouseNumInt = parseInt(warehouseNum);
     let qtyInt = parseInt(qty);
-    if (warehouseNumInt === null) {
-        console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNum);
-        console.log("WAREHOUSE# NOT INTEGER");
-        readline.prompt();
-        return;
+    if (isNaN(warehouseNumInt)) {
+        return new Promise((resolve, reject) => {
+            console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " 
+            + warehouseNum + "\nWAREHOUSE# NOT INTEGER");
+            readline.prompt();
+            resolve();
+        });
     }
-    if (qtyInt === null) {
-        console.log("ERROR STOCKING WAREHOUSE with QTY " + qty);
-        console.log("QTY NOT INTEGER");
-        readline.prompt();
-        return;
+
+    if (isNaN(qtyInt)) {
+        return new Promise((resolve, reject) => {
+            console.log("ERROR STOCKING WAREHOUSE with QTY " 
+            + qty + "\nQTY NOT INTEGER");
+            readline.prompt();
+            resolve();
+        });
     }
-    // check if warehouse exists and get its limit
-    const getSuccess = (limit) => {
+
+    function case1(available) {
+        //  Case 1: sku does not exists in stock
+        //     (i) insert product with quantity allowed if there is a limit
+        //     (ii) insert as many product as requested
+        return new Promise ((resolve, reject) => {
+            dbHelper.insertProductInWarehouse(db, sku, warehouseNumInt, available, resolve, resolve);
+        }).then((res) => {
+            if (res) { // failed
+                let err = res;
+                if (err.errno === 19) {
+                    console.log("ERROR STOCKING WAREHOUSE with SKU " 
+                    + sku + "\nPRODUCT DOES NOT EXISTS");
+                } else {
+                    unexpectedFailure(err);
+                }
+            } 
+            // success
+            readline.prompt();
+        });
+    }
+
+    function case2(available, qty) {
+        //  Case 2: sku exists in stock
+        //      (i) update product with quantity allowed if there is a limit
+        //      (ii) update as many product as requested 
+        return new Promise ((resolve, reject) => {
+            dbHelper.updateProductInWarehouse(db, sku, warehouseNumInt, qty + available, resolve, unexpectedFailure);
+        }).then(() => {
+            readline.prompt();
+        });
+    }
+
+    function checkProduct(available) {
+        return new Promise ((resolve, reject) => {
+            // check if product exists in warehouse by excuting a query for the product
+            dbHelper.getProductInWarehouse(db, sku, warehouseNumInt, resolve, unexpectedFailure);
+        }).then(async (result) => {
+            if (!result) { //  sku does not exists in the warehouse's stock
+                await case1(available);
+            } else { // sku exists in the warehouse's stock
+                await case2(available, result.QTY);
+            }
+        });
+    }
+
+    function getTotalProducts(limit) {
+        return new Promise ((resolve, reject) => {
+            dbHelper.getSumProductInWarehouse(db, warehouseNumInt, resolve, unexpectedFailure);
+        }).then((total) => {
+            // get the total stock quantity in the corresponding warehouse
+            if (!total) { // warehouse is empty
+                total = 0;
+            }
+            // calculate for available space
+            return limit ? (limit > qtyInt + total ? qtyInt : limit) : qtyInt; 
+        }).then(async (available) => {
+            await checkProduct(available);
+        });
+    }
+
+    return new Promise((resolve, reject) => {
+        // check if warehouse exists by excuting a query for limit
+        dbHelper.getWarehouseLimit(db, warehouseNumInt, resolve, unexpectedFailure);
+    }).then( async (limit) => {
         if (limit !== undefined) { // warehouse exists
-    //      get the total stock quantity in the corresponding warehouse
-            const sumSuccess = (total) => {
-                if (!total) { // warehouse is empty
-                    total = 0;
-                }
-                let available = limit ? (limit > qtyInt + total ? qtyInt : limit) : qtyInt;
-                const checkSuccess = (result) => {
-                    if (!result) { //  sku does not exists in the warehouse's stock
-    //      Case 1: sku does not exists in stock
-    //          (i) insert product with quantity allowed if there is a limit
-    //          (ii) insert as many product as requested
-                        const insertSuccess = () => { readline.prompt(); };
-                        const insertFail = (err) => {
-                            if (err.errno === 19) {
-                                console.log("ERROR STOCKING WAREHOUSE with SKU " + sku);
-                                console.log("PRODUCT DOES NOT EXISTS");
-                                readline.prompt();
-                            } else {
-                                unexpectedFailure(err);
-                            }
-                        }
-                        dbHelper.insertProductInWarehouse(db, sku, warehouseNumInt, available, insertSuccess, insertFail);
-                    } else { // sku exists in the warehouse's stock
-    //      Case 2: sku exists in stock
-    //          (i) update product with quantity allowed if there is a limit
-    //          (ii) update as many product as requested 
-                        const updateSuccess = () => { readline.prompt(); };
-                        dbHelper.updateProductInWarehouse(db, sku, warehouseNumInt, result.QTY + available, updateSuccess, unexpectedFailure);
-                    }
-                }
-                dbHelper.getProductInWarehouse(db, sku, warehouseNumInt, checkSuccess, unexpectedFailure);
-            };
-            dbHelper.getSumProductInWarehouse(db, warehouseNumInt, sumSuccess, unexpectedFailure);
+            await getTotalProducts(limit);
         } else {
-            console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNumInt);
-            console.log("WAREHOUSE DOES NOT EXIST");
-            readline.prompt(); 
+            console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " 
+            + warehouseNumInt + "\nWAREHOUSE DOES NOT EXIST");
+            readline.prompt();
+            return false;
         }
-    };
-    dbHelper.getWarehouseLimit(db, warehouseNumInt, getSuccess, unexpectedFailure);
+    });
 }
 
 function unstock(db, readline, sku, warehouseNum, qty) {
@@ -178,46 +228,73 @@ function unstock(db, readline, sku, warehouseNum, qty) {
     let warehouseNumInt = parseInt(warehouseNum);
     let qtyInt = parseInt(qty);
     if (warehouseNumInt === null) {
-        console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNum);
-        console.log("WAREHOUSE# NOT INTEGER");
-        readline.prompt();
-        return;
+        return new Promise((resolve, reject) => {
+            console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " 
+            + warehouseNum + "\nWAREHOUSE# NOT INTEGER");
+            readline.prompt();
+            resolve();
+        });
     }
     if (qtyInt === null) {
-        console.log("ERROR STOCKING WAREHOUSE with QTY " + qty);
-        console.log("QTY NOT INTEGER");
-        readline.prompt();
-        return;
+        return new Promise((resolve, reject) => {
+            console.log("ERROR STOCKING WAREHOUSE with QTY " 
+            + qty + "\nQTY NOT INTEGER");
+            readline.prompt();
+            resolve();
+        });
     }
-    // check if warehouse exists
-    const getSuccess = (limit) => { 
-        if (limit !== undefined) { // warehouse exists
-    //      get the total stock quantity in the corresponding warehouse
-            const sumSuccess = (total) => {
-                if (!total) { // warehouse is empty
+
+    function checkProduct(available) {
+        return new Promise ((resolve, reject) => {
+            // check if product exists in warehouse by excuting a query for the product
+            dbHelper.getProductInWarehouse(db, sku, warehouseNumInt, resolve, unexpectedFailure);
+        }).then(async (result) => {
+            if (!result) { //  sku does not exists in the warehouse's stock
+                console.log("ERROR UNSTOCKING WAREHOUSE with SKU " 
+                + sku + "\nPRODUCT DOES NOT EXISTS");
+                readline.prompt();
+            } else { // sku exists in the warehouse's stock
+                await new Promise((resolve, reject) => {
+                    dbHelper.updateProductInWarehouse(
+                        db, sku, warehouseNumInt, Math.max(result.QTY - qtyInt, 0), 
+                        resolve, unexpectedFailure);
+                }).then(() => {
                     readline.prompt();
-                    return; // nothing to unstock
-                }
-                const checkSuccess = (result) => {
-                    if (!result) { //  sku does not exists in the warehouse's stock
-                        console.log("ERROR UNSTOCKING WAREHOUSE with SKU " + sku);
-                        console.log("PRODUCT DOES NOT EXISTS");
-                        readline.prompt();
-                    } else { // sku exists in the warehouse's stock
-                        const updateSuccess = () => { readline.prompt(); };
-                        dbHelper.updateProductInWarehouse(db, sku, warehouseNumInt, Math.max(result.QTY - qtyInt, 0), updateSuccess, unexpectedFailure);
-                    }
-                }
-                dbHelper.getProductInWarehouse(db, sku, warehouseNumInt, checkSuccess, unexpectedFailure);
-            };
-            dbHelper.getSumProductInWarehouse(db, warehouseNumInt, sumSuccess, unexpectedFailure);
+                });
+            }
+        });
+    }
+
+    function getTotalProducts(limit) {
+        return new Promise ((resolve, reject) => {
+            dbHelper.getSumProductInWarehouse(db, warehouseNumInt, resolve, unexpectedFailure);
+        }).then((total) => {
+            // get the total stock quantity in the corresponding warehouse
+            if (!total) { // warehouse is empty
+                readline.prompt();
+                return null; // nothing to unstock
+            }
+            // calculate for available space
+            return limit ? (limit > qtyInt + total ? qtyInt : limit) : qtyInt; 
+        }).then(async (available) => {
+            if (available) await checkProduct(available);
+        });
+    }
+
+    return new Promise((resolve, reject) => {
+        // check if warehouse exists by excuting a query for limit
+        dbHelper.getWarehouseLimit(db, warehouseNumInt, resolve, unexpectedFailure);
+    }).then(async (limit) => {
+        if (limit !== undefined) { // warehouse exists
+            await getTotalProducts(limit);
         } else {
-            console.log("ERROR UNSTOCKING WAREHOUSE with WAREHOUSE# " + warehouseNumInt);
-            console.log("WAREHOUSE DOES NOT EXIST");
-            readline.prompt(); 
+            console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " 
+            + warehouseNumInt + "\nWAREHOUSE DOES NOT EXIST");
+            console.log();
+            readline.prompt();
+            return false;
         }
-    };
-    dbHelper.getWarehouseLimit(db, warehouseNumInt, getSuccess, unexpectedFailure);
+    });
 }
 
 function listProducts(db, readline) {
@@ -230,11 +307,12 @@ function listProducts(db, readline) {
     Arguments:
         db - database object used in the program
     */
-    const success = (result) => {
+    return new Promise ((resolve, reject) => {
+        dbHelper.getAllProduct(db, resolve, unexpectedFailure);
+    }).then((result) => {
         printTable(result);
         readline.prompt();
-    }
-    dbHelper.getAllProduct(db, success, unexpectedFailure);
+    });
 }
 
 function listWarehouses(db, readline) {
@@ -247,11 +325,12 @@ function listWarehouses(db, readline) {
     Arguments:
         db - database object used in the program
     */
-    const success = (result) => {
+    return new Promise ((resolve, reject) => {
+        dbHelper.getAllWarehouse(db, resolve, unexpectedFailure);
+    }).then((result) => {
         printTable(result);
         readline.prompt();
-    }
-    dbHelper.getAllWarehouse(db, success, unexpectedFailure);
+    });
 }
 
 function listWarehouse(db, readline, warehouseNum) {
@@ -265,18 +344,22 @@ function listWarehouse(db, readline, warehouseNum) {
     Arguments:
         db - database object used in the program
     */
-    const success = (result) => {
-        printTable(result);
-        readline.prompt();
-    };
     let warehouseNumInt = parseInt(warehouseNum);
     if (warehouseNumInt === null) {
-        console.log("ERROR STOCKING WAREHOUSE with WAREHOUSE# " + warehouseNum);
-        console.log("WAREHOUSE# NOT INTEGER");
-        readline.prompt();
-        return;
+        return new Promise((resolve, reject) => {
+            console.log("ERROR LISTING WAREHOUSE with WAREHOUSE# " 
+            + warehouseNum + "\nWAREHOUSE# NOT INTEGER");
+            readline.prompt();
+            resolve();
+        });
     }
-    dbHelper.getProductsInWarehouse(db, warehouseNumInt, success, unexpectedFailure);
+    
+    return new Promise ((resolve, reject) => {
+        dbHelper.getProductsInWarehouse(db, warehouseNumInt, resolve, unexpectedFailure);
+    }).then((result) => {
+        printTable(result);
+        readline.prompt();
+    });
 }
 
 module.exports = {

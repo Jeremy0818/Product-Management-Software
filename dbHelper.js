@@ -49,7 +49,8 @@ function insertProduct(db, product_name, sku, success, failure) {
     sql = `INSERT INTO product(SKU, product_name) VALUES (?, ?)`;
     db.run(sql, [sku, product_name], function(err) {
         if (err) {
-            return failure(err);
+            failure(err);
+            return;
         }
         success();
     });
