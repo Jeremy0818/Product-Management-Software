@@ -1,5 +1,5 @@
 const sqlite3 = require('sqlite3').verbose();
-const commandHandler = require("./commandhandler");
+const commandHandler = require("./commandHandler");
 const dbHelper = require("./dbHelper");
 
 function run() {
