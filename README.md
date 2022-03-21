@@ -26,7 +26,12 @@ Run the command:
 npm start
 ```
 
+## How to end the program
+
+EOF to quit (press Ctrl + D will cause the stdin file descriptor to return end-of-file)
+
 ## How to test the program
+More tests can be added to the tests folder. There are currenlty two test files for Unit testing and API testing.
 ```
 npm test                        // to run all tests
 npm test <tests/testfile>       // to test a single test suite
