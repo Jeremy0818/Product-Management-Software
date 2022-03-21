@@ -63,4 +63,4 @@ Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) to 
 
 * The database is currently stored in memory and will not be saved when the program is ended. However, this can be modified easily to store the data in a file so that data persists between different runs.
 
-* The program will stop immediately if there is any unexpected error occur to avoid crashing the system.
+* The program will stop immediately when there is any unexpected error raised to avoid crashing the system.
