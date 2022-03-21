@@ -56,3 +56,11 @@ Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) to 
 - Print the result with a better representation (currently using console.table)
 - Handle unexpected error and keep the program running
 - Add more helpful commands to manage the products
+
+## Notes
+
+* Command log history is saved to file named "history.log". Currently, the filename is hard coded but can be changed with just a simple modification in the file commandHandler.js line 4.
+
+* The database is currently stored in memory and will not be saved when the program is ended. However, this can be modified easily to store the data in a file so that data persists between different runs.
+
+* The program will stop immediately if there is any unexpected error occur to avoid crashing the system.
