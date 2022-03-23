@@ -1,12 +1,14 @@
 const sqlite3 = require('sqlite3').verbose();
 const commandHandler = require("./commandHandler");
-const dbHelper = require("./dbHelper");
+const DbHelper = require("./dbHelper");
 
 function run() {
     const readline = require('readline').createInterface({
         input: process.stdin,
         output: process.stdout
     });
+
+    var dbHelper;
 
     // open the database
     let db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
@@ -25,11 +27,12 @@ function run() {
             console.error(err.message);
             process.exit(1);
         };
-        dbHelper.setuptable(db, success, failure);
+        dbHelper = new DbHelper(db);
+        dbHelper.setuptable(success, failure);
     });
     
     readline.on('line', function(line) {
-        commandHandler.handleCommand(line, db, readline);
+        commandHandler.handleCommand(line, dbHelper, readline);
     }).on('close', function() {
         console.log('Have a great day!');
 

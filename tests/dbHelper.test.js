@@ -1,9 +1,9 @@
-const dbHelper = require("../dbHelper");
+const DbHelper = require("../dbHelper");
 const sqlite3 = require('sqlite3').verbose();
 
-jest.setTimeout(5000);
+jest.setTimeout(3000);
 
-var db;
+var db, dbHelper;
 const empty = () => {};
 const fail = (err) => { console.error(err.message) };
 
@@ -15,7 +15,8 @@ var setup = () => {
                     console.error(err.message);
                     return reject();
                 }
-                dbHelper.setuptable(db, resolve, empty);
+                dbHelper = new DbHelper(db);
+                dbHelper.setuptable(resolve, empty);
             }
         );
     })
@@ -68,9 +69,9 @@ describe("Interact with warehouse table", function() {
                 done();
             });
         }
-        dbHelper.insertWarehouse(db, 970, null, empty, empty);
-        dbHelper.insertWarehouse(db, 45, null, empty, empty);
-        dbHelper.insertWarehouse(db, 2, null, next, empty);
+        dbHelper.insertWarehouse(970, null, empty, empty);
+        dbHelper.insertWarehouse(45, null, empty, empty);
+        dbHelper.insertWarehouse(2, null, next, empty);
     });
     
     test("Insert invalid product test", done => {
@@ -78,7 +79,7 @@ describe("Interact with warehouse table", function() {
             expect(err.errno).toBe(19);
             done();
         }
-        dbHelper.insertWarehouse(db, 2, null, empty, next);
+        dbHelper.insertWarehouse(2, null, empty, next);
     });
     
     test("Select all warehouses test", done => {
@@ -91,7 +92,7 @@ describe("Interact with warehouse table", function() {
             expect(result.sort(warehouse_func)).toEqual(expected.sort(warehouse_func));
             done();
         }
-        dbHelper.getAllWarehouse(db, success, empty);
+        dbHelper.getAllWarehouse(success, empty);
     });
 
     test("Get valid warehouse limit test", done => {
@@ -99,7 +100,7 @@ describe("Interact with warehouse table", function() {
             expect(result).toEqual(null);
             done();
         }
-        dbHelper.getWarehouseLimit(db, 970, next, fail);
+        dbHelper.getWarehouseLimit(970, next, fail);
     })
     
     test("Get invalid warehouse limit test", done => {
@@ -107,7 +108,7 @@ describe("Interact with warehouse table", function() {
             expect(result).toEqual(undefined);
             done();
         }
-        dbHelper.getWarehouseLimit(db, 0, next, fail);
+        dbHelper.getWarehouseLimit(0, next, fail);
     })
 });
 
@@ -134,8 +135,8 @@ describe("Interact with product table", function() {
                 done();
             });
         }
-        dbHelper.insertProduct(db, "Sofia Vegara 5 Piece Living Room Set", "38538505-0767-453f-89af-d11c809ebb3b", empty, empty);
-        dbHelper.insertProduct(db, "BED", "5ce956fa-a71e-4bfb-b6ae-5eeaa5eb0a70", next, empty);
+        dbHelper.insertProduct("Sofia Vegara 5 Piece Living Room Set", "38538505-0767-453f-89af-d11c809ebb3b", empty, empty);
+        dbHelper.insertProduct("BED", "5ce956fa-a71e-4bfb-b6ae-5eeaa5eb0a70", next, empty);
         
     });
     
@@ -144,7 +145,7 @@ describe("Interact with product table", function() {
             expect(err.errno).toBe(19);
             done();
         }
-        dbHelper.insertProduct(db, "TRUNK", "5ce956fa-a71e-4bfb-b6ae-5eeaa5eb0a70", empty, next);
+        dbHelper.insertProduct("TRUNK", "5ce956fa-a71e-4bfb-b6ae-5eeaa5eb0a70", empty, next);
     });
     
     test("Select all products test", done => {
@@ -159,7 +160,7 @@ describe("Interact with product table", function() {
             expect(result.sort(product_func)).toEqual(expected.sort(product_func));
             done();
         }
-        dbHelper.getAllProduct(db, success, empty);
+        dbHelper.getAllProduct(success, empty);
     });
 })
 
@@ -179,7 +180,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.insertProductInWarehouse(db, 
+        dbHelper.insertProductInWarehouse(
             "38538505-0767-453f-89af-d11c809ebb3b",
             970,
             1000,
@@ -192,7 +193,7 @@ describe("Interact with stock table", function() {
             expect(err.errno).toBe(19);
             done();
         }
-        dbHelper.insertProductInWarehouse(db, 
+        dbHelper.insertProductInWarehouse(
             "5ce95", 
             970,
             1000,
@@ -205,7 +206,7 @@ describe("Interact with stock table", function() {
             expect(err.errno).toBe(19);
             done();
         }
-        dbHelper.insertProductInWarehouse(db, 
+        dbHelper.insertProductInWarehouse(
             "38538505-0767-453f-89af-d11c809ebb3b", 
             97,
             1000,
@@ -218,7 +219,7 @@ describe("Interact with stock table", function() {
             expect(err.errno).toBe(19);
             done();
         }
-        dbHelper.insertProductInWarehouse(db, 
+        dbHelper.insertProductInWarehouse(
             "38538505", 
             97,
             1000,
@@ -231,7 +232,7 @@ describe("Interact with stock table", function() {
             expect(err.errno).toBe(19);
             done();
         }
-        dbHelper.insertProductInWarehouse(db, 
+        dbHelper.insertProductInWarehouse(
             "38538505-0767-453f-89af-d11c809ebb3b",
             970,
             1000,
@@ -254,7 +255,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.updateProductInWarehouse(db, 
+        dbHelper.updateProductInWarehouse(
             "38538505-0767-453f-89af-d11c809ebb3b",
             970,
             500,
@@ -277,7 +278,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.updateProductInWarehouse(db, 
+        dbHelper.updateProductInWarehouse(
             "38538505",
             970,
             500,
@@ -300,7 +301,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.updateProductInWarehouse(db, 
+        dbHelper.updateProductInWarehouse(
             "38538505-0767-453f-89af-d11c809ebb3b",
             97,
             500,
@@ -323,7 +324,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.updateProductInWarehouse(db, 
+        dbHelper.updateProductInWarehouse(
             "38538505",
             97,
             500,
@@ -348,16 +349,16 @@ describe("Interact with stock table", function() {
             console.error(err.message);
             done();
         }
-        dbHelper.insertProduct(db,
+        dbHelper.insertProduct(
             "new item",
             "1",
             () => {
-                dbHelper.insertProductInWarehouse(db,
+                dbHelper.insertProductInWarehouse(
                     "1",
                     970,
                     1,
                     () => {
-                        dbHelper.getProductsInWarehouse(db,
+                        dbHelper.getProductsInWarehouse(
                             970,
                             next,
                             fail);
@@ -372,7 +373,7 @@ describe("Interact with stock table", function() {
             expect(result).toEqual([]);
             done();
         }
-        dbHelper.getProductsInWarehouse(db,
+        dbHelper.getProductsInWarehouse(
             97,
             next,
             empty);
@@ -388,7 +389,7 @@ describe("Interact with stock table", function() {
             expect(result).toEqual(expected);
             done();
         }
-        dbHelper.getProductInWarehouse(db,
+        dbHelper.getProductInWarehouse(
             '38538505-0767-453f-89af-d11c809ebb3b',
             970,
             next,
@@ -400,7 +401,7 @@ describe("Interact with stock table", function() {
             expect(result).toEqual(undefined);
             done();
         }
-        dbHelper.getProductInWarehouse(db,
+        dbHelper.getProductInWarehouse(
             '38538505',
             970,
             next,
@@ -412,7 +413,7 @@ describe("Interact with stock table", function() {
             expect(result).toEqual(undefined);
             done();
         }
-        dbHelper.getProductInWarehouse(db,
+        dbHelper.getProductInWarehouse(
             '38538505-0767-453f-89af-d11c809ebb3b',
             90,
             next,
@@ -424,7 +425,7 @@ describe("Interact with stock table", function() {
             expect(result).toEqual(undefined);
             done();
         }
-        dbHelper.getProductInWarehouse(db,
+        dbHelper.getProductInWarehouse(
             '38538505',
             97,
             next,
@@ -433,10 +434,10 @@ describe("Interact with stock table", function() {
 
     test("Get total quantity of existing product in a valid warehouse test", done => {
         const next = (result) => {
-            expect(result).toBe(500+1);
+            expect(result).toBe(501);
             done();
         }
-        dbHelper.getSumProductInWarehouse(db, 970, next, empty);
+        dbHelper.getSumProductInWarehouse(970, next, empty);
     })
 
     test("Get total quantity of a valid empty warehouse test", done => {
@@ -444,7 +445,7 @@ describe("Interact with stock table", function() {
             expect(result).toBe(null);
             done();
         }
-        dbHelper.getSumProductInWarehouse(db, 0, next, empty);
+        dbHelper.getSumProductInWarehouse(0, next, empty);
     })
 
     test("Remove invalid product and invalid warehouse in stock test", done => {
@@ -462,7 +463,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.removeProductInWarehouse(db,
+        dbHelper.removeProductInWarehouse(
             '38538505', 
             97, 
             next, 
@@ -484,7 +485,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.removeProductInWarehouse(db,
+        dbHelper.removeProductInWarehouse(
             '38538505', 
             970, 
             next, 
@@ -506,7 +507,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.removeProductInWarehouse(db,
+        dbHelper.removeProductInWarehouse(
             '38538505-0767-453f-89af-d11c809ebb3b', 
             97, 
             next, 
@@ -523,7 +524,7 @@ describe("Interact with stock table", function() {
                 done();
             })
         }
-        dbHelper.removeProductInWarehouse(db,
+        dbHelper.removeProductInWarehouse(
             '38538505-0767-453f-89af-d11c809ebb3b', 
             970, 
             next, 

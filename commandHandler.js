@@ -1,4 +1,4 @@
-const command = require('./command');
+const Command = require('./command');
 const FileHelper = require("./fileHelper");
 
 const fileHelper = new FileHelper("history.log");
@@ -20,7 +20,9 @@ function printErrorMessage(errMsg, formats, readline) {
     readline.prompt();
 }
 
-function handleCommand(line, db, readline) {
+function handleCommand(line, dbHelper, readline) {
+    const command = new Command(dbHelper, readline);
+
     // removes whitespace from both ends of a string 
     // regex: match words and quotations
     var args = line.trim().match(/"[^"]+"|[a-z0-9]+(-*[a-z0-9]+)+|[a-zA-Z]+|[0-9]+/gm);
@@ -52,14 +54,14 @@ function handleCommand(line, db, readline) {
                     [addProductFormat], readline);
                     break;
                 }
-                command.addProduct(db, readline, args[2], args[3]);
+                command.addProduct(args[2], args[3]);
             } else if (args[1].toLowerCase().localeCompare("warehouse") === 0) {
                 if (args.length < 3) {
                     printErrorMessage("Invalid argument, the command format is:",
                     [addWarehouseFormat], readline);
                     break;
                 }
-                command.addWarehouse(db, readline, args[2], args.length > 3 ? args[3] : null);
+                command.addWarehouse(args[2], args.length > 3 ? args[3] : null);
             } else {
                 // console.log(invalidCommandMessage);
                 printErrorMessage("Invalid command, commands available are:",
@@ -74,7 +76,7 @@ function handleCommand(line, db, readline) {
                 [stockFormat], readline);
                 break;
             }
-            command.stock(db, readline, args[1], args[2], args[3]);
+            command.stock(args[1], args[2], args[3]);
             break;
         case 'unstock':
             if (args.length < 2) {
@@ -82,7 +84,7 @@ function handleCommand(line, db, readline) {
                 [unstockFormat], readline);
                 break;
             }
-            command.unstock(db, readline, args[1], args[2], args[3]);
+            command.unstock(args[1], args[2], args[3]);
             break;
         case 'list':
             if (args.length < 2) {
@@ -91,16 +93,16 @@ function handleCommand(line, db, readline) {
                 break;
             }
             if (args[1].toLowerCase().localeCompare("products") === 0) {
-                command.listProducts(db, readline);
+                command.listProducts();
             } else if (args[1].toLowerCase().localeCompare("warehouses") === 0) {
-                command.listWarehouses(db, readline);
+                command.listWarehouses();
             } else if (args[1].toLowerCase().localeCompare("warehouse") === 0) {
                 if (args.length < 3) {
                     printErrorMessage("Invalid argument, the command format is:",
                     [listWarehouseFormat], readline);
                     break;
                 }
-                command.listWarehouse(db, readline, args[2]);
+                command.listWarehouse(args[2]);
             } else {
                 printErrorMessage("Invalid command, commands available are:",
                 [addProductFormat, addWarehouseFormat, stockFormat, unstockFormat,
