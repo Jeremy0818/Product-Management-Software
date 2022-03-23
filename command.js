@@ -1,6 +1,5 @@
 
 const printTable = (data) => {
-    console.log(data);
     console.table(data);
 }
 

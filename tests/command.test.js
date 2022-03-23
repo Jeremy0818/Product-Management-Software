@@ -256,6 +256,7 @@ describe("Stock tests", () => {
     });
 
     test("Stock existing product valid command test", () => {
+        // check if the command udpate the stock instead of insert a new row
         return command.stock("5ce956fa-a71e-4bfb-b6ae-5eeaa5eb0a70", 970, 1000).then(() => {
             expect(spyGetLimit).toHaveBeenCalledTimes(1);
             expect(spyPrompt).toHaveBeenCalledTimes(1);
