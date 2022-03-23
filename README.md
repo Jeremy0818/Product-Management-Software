@@ -45,7 +45,7 @@ Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) to 
 - allow upper and lower case command
 - print output in table format
 - invalid command/argument info
-- store items from previous run in database (eg. product.db)
+- able to store items from previous run in database (See no. 2 in Notes below)
 
 ## Future Improvement
 - Generate unique id (SKU) automatically
@@ -59,8 +59,8 @@ Go to [wiki](https://github.com/Jeremy0818/Product-Management-Software/wiki) to 
 
 ## Notes
 
-* Command log history is saved to file named "history.log". Currently, the filename is hard coded but can be changed with just a simple modification in the file commandHandler.js line 4.
+1. Command log history is saved to file named "history.log". Currently, the filename is hard coded but can be changed with just a simple modification in the file commandHandler.js line 4.
 
-* The database is currently stored in memory and will not be saved when the program is ended. However, this can be modified easily to store the data in a file so that data persists between different runs.
+2. The database is currently stored in memory and will not be saved when the program is ended. However, this can be modified easily to store the data in a file so that data persists between different runs.
 
-* The program will stop immediately when there is any unexpected error raised to avoid crashing the system.
+3. The program will stop immediately when there is any unexpected error raised to avoid crashing the system.
